@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Viewer – Cyber MITM Lab</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root { --bg:#0f172a; --panel:#0b1220; --panel2:#111827; --accent:#38bdf8; --text:#e5e7eb; --muted:#93a1b2; }
+    body { margin:0; font-family: system-ui, Arial, sans-serif; background:var(--bg); color:var(--text); }
+    header, main { max-width:1060px; margin:0 auto; padding:1.25rem; }
+    h1 { margin:.25rem 0 .5rem; font-size:clamp(1.3rem,3.4vw,1.9rem); }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    nav { display:flex; gap:.75rem; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    .btn { display:inline-flex; align-items:center; gap:.35rem; background:#334155; color:#e2e8f0; border:1px solid #475569; padding:.45rem .8rem; border-radius:8px; text-decoration:none; }
+    .btn:hover { filter:brightness(1.08); text-decoration:none; }
+    .btn-accent { background:#38bdf8; color:#082f49; border-color:#0891b2; }
+    .meta { color:var(--muted); font-size:.9rem; }
+    .panel { background:var(--panel2); border:1px solid #374151; border-radius:12px; padding:1rem; }
+    pre { background:#0d1117; color:#e5e7eb; padding:.9rem 1rem; border-radius:8px; overflow:auto; font-size:.9rem; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    .toolbar { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0 1rem; }
+    .copy { cursor:pointer; }
+    /* light mode */
+    body[data-theme="light"] { --bg:#f1f5f9; --panel:#f8fafc; --panel2:#ffffff; --text:#0f172a; --muted:#475569; }
+    body[data-theme="light"] pre { background:#e2e8f0; color:#0f172a; }
+    object.pdf { width:100%; height:75vh; border:1px solid #374151; border-radius:8px; background:#111827; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <div>
+        <h1 id="viewTitle">Viewer</h1>
+        <div class="meta" id="meta"></div>
+      </div>
+      <div>
+        <button id="themeToggle" class="btn">Switch to light mode</button>
+      </div>
+    </nav>
+    <div class="toolbar">
+      <a class="btn" href="all-in-one.html">All-in-one</a>
+      <a class="btn" href="index.html">Demo</a>
+      <a id="openRaw" class="btn" href="#" target="_blank" rel="noopener">Open raw file</a>
+      <button id="copyBtn" class="btn copy" style="display:none;">Copy contents</button>
+      <a id="downloadBtn" class="btn" href="#" download style="display:none;">Download</a>
+    </div>
+  </header>
+  <main>
+    <div class="panel" id="container">
+      <pre id="pre" style="display:none;"><code id="code"></code></pre>
+      <object id="pdf" class="pdf" data="" type="application/pdf" style="display:none;">
+        <p>PDF preview unavailable. <a id="pdfLink" href="#" target="_blank" rel="noopener">Open PDF</a></p>
+      </object>
+    </div>
+  </main>
+  <script>
+    (function(){
+      // Theme toggle
+      const key = 'theme';
+      const btn = document.getElementById('themeToggle');
+      const apply = (mode)=>{
+        if(mode === 'light'){
+          document.body.setAttribute('data-theme','light');
+          btn.textContent = 'Switch to dark mode';
+        } else {
+          document.body.removeAttribute('data-theme');
+          btn.textContent = 'Switch to light mode';
+        }
+      };
+      let saved = localStorage.getItem(key) || 'dark';
+      apply(saved);
+      btn.addEventListener('click', ()=>{
+        saved = (saved === 'dark') ? 'light' : 'dark';
+        localStorage.setItem(key, saved);
+        apply(saved);
+      });
+
+      // Viewer logic
+      const params = new URLSearchParams(location.search);
+      const file = params.get('file') || 'README.md';
+      const type = (params.get('type') || 'code').toLowerCase();
+      const title = params.get('title') || file;
+      document.title = `View: ${title} – Cyber MITM Lab`;
+      document.getElementById('viewTitle').textContent = title;
+      document.getElementById('meta').textContent = `${type === 'pdf' ? 'PDF document' : 'Text file'} · ${file}`;
+
+      const raw = document.getElementById('openRaw');
+      raw.href = file;
+      const copyBtn = document.getElementById('copyBtn');
+      const dlBtn = document.getElementById('downloadBtn');
+      dlBtn.href = file;
+      dlBtn.setAttribute('download', file.split('/').pop());
+
+      const pre = document.getElementById('pre');
+      const code = document.getElementById('code');
+      const pdf = document.getElementById('pdf');
+      const pdfLink = document.getElementById('pdfLink');
+
+      if(type === 'pdf'){
+        pdf.style.display = '';
+        pdf.data = file;
+        pdfLink.href = file;
+        dlBtn.style.display = '';
+      } else {
+        pre.style.display = '';
+        copyBtn.style.display = '';
+        dlBtn.style.display = '';
+        fetch(file)
+          .then(r => {
+            if(!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.text();
+          })
+          .then(txt => {
+            code.textContent = txt;
+          })
+          .catch(err => {
+            code.textContent = `Failed to load ${file}: ${err.message}`;
+          });
+      }
+
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(code.textContent || '');
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => (copyBtn.textContent = 'Copy contents'), 1200);
+        } catch (e) {
+          copyBtn.textContent = 'Copy failed';
+          setTimeout(() => (copyBtn.textContent = 'Copy contents'), 1200);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

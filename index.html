@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cyber MITM Attack Lab – Demonstration</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root { --bg:#0f172a; --panel:#1e293b; --accent:#38bdf8; --danger:#ef4444; --ok:#10b981; --text:#f1f5f9; --muted:#94a3b8; }
+    body { font-family: system-ui, Arial, sans-serif; margin:0; background: var(--bg); color: var(--text); line-height:1.4; }
+    header { padding:2rem 1.25rem 1rem; max-width:960px; margin:auto; }
+    h1 { margin:0 0 .5rem; font-size:clamp(1.8rem,4vw,2.6rem); }
+  /* No blue text links; use buttons for actionable links */
+  a { color: inherit; text-decoration:none; }
+  a:hover { text-decoration:none; }
+    main { max-width:960px; margin:0 auto 3rem; padding:0 1.25rem; }
+    section { background: var(--panel); padding:1.25rem 1.25rem 1.5rem; border-radius:12px; margin-bottom:1.25rem; box-shadow:0 6px 16px -8px #000; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    pre { background:#0d1117; padding:.75rem 1rem; overflow:auto; border-radius:8px; font-size:.85rem; }
+    .grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }
+    .pill { display:inline-block; padding:.25rem .6rem; background:#334155; border-radius:999px; font-size:.7rem; letter-spacing:.05em; text-transform:uppercase; }
+    .status-ok { color: var(--ok); }
+    .status-block { color: var(--danger); }
+    .demo-panel { border:1px solid #334155; }
+    input, textarea, button { font: inherit; }
+    fieldset { border:1px solid #334155; padding:1rem; border-radius:8px; }
+    label { display:block; font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; margin-bottom:.25rem; font-weight:600; color:var(--muted); }
+    .row { display:flex; gap:.75rem; flex-wrap:wrap; }
+    input[type=text], textarea { background:#0d1117; color:var(--text); border:1px solid #334155; padding:.5rem .65rem; border-radius:6px; width:100%; }
+    button { cursor:pointer; background:var(--accent); color:#082f49; font-weight:600; border:none; padding:.6rem 1rem; border-radius:6px; box-shadow:0 2px 6px -2px #000; }
+    button:hover { filter:brightness(1.1); }
+    footer { text-align:center; font-size:.75rem; color:var(--muted); padding:2rem 1rem 3rem; }
+  .output-line { border-bottom:1px solid #1e293b; padding:.3rem 0; font-size:.8rem; }
+  /* Output box styling (dark default) */
+  .output-box { margin-top:1rem; background:#0d1117; border:1px solid #334155; border-radius:8px; padding:.75rem; min-height:120px; }
+    .output-line:last-child { border-bottom:none; }
+    .tag { font-size:.6rem; padding:.15rem .4rem; border-radius:4px; background:#1e3a8a; margin-left:.5rem; }
+    /* Manual light mode override (default remains dark) */
+    body[data-theme="light"] { --bg:#f1f5f9; --panel:#ffffff; --text:#0f172a; --muted:#64748b; }
+    body[data-theme="light"] pre { background:#e2e8f0; }
+    /* Light mode: buttons and controls */
+    body[data-theme="light"] .btn { background:#e5e7eb; color:#0f172a; border-color:#cbd5e1; }
+    body[data-theme="light"] .btn-accent { background:#0ea5e9; color:#042f2e; border-color:#0284c7; }
+    body[data-theme="light"] .toggle { background:#e5e7eb; color:#0f172a; border-color:#cbd5e1; }
+    body[data-theme="light"] input[type=text],
+    body[data-theme="light"] textarea { background:#ffffff; color:#0f172a; border-color:#cbd5e1; }
+  body[data-theme="light"] .output-box { background:#f8fafc; border-color:#cbd5e1; }
+    body[data-theme="light"] .pill { background:#e2e8f0; color:#0f172a; }
+  .toolbar { display:flex; gap:.75rem; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; position:relative; }
+  .toolbar .right { display:flex; gap:.5rem; align-items:flex-start; align-self:flex-start; margin-left:auto; }
+    .toggle { background:#334155; color:#e2e8f0; border:1px solid #475569; padding:.4rem .7rem; border-radius:999px; cursor:pointer; }
+    .toggle:hover { filter:brightness(1.1); }
+    /* Button-style links */
+    .btn { display:inline-flex; align-items:center; gap:.4rem; background:#334155; color:#e2e8f0; border:1px solid #475569; padding:.45rem .8rem; border-radius:8px; text-decoration:none; }
+    .btn:hover { filter:brightness(1.1); text-decoration:none; }
+    .btn-accent { background:var(--accent); color:#082f49; border-color:#0891b2; }
+    .links { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+  .ai-note { display:block; margin-bottom:.5rem; color:var(--muted); }
+    /* Place theme toggle at fixed top-right of the page */
+  /* Theme toggle fixed similar placement style as requested (percent offsets) */
+  #themeToggle { position: fixed; top:7%; right:9%; z-index:1000; padding:.34rem .50rem; font-size:.82rem; line-height:1.05; border-radius:4px; }
+  /* AI generation badge */
+  .ai-badge { display:inline-block; font-size:.55rem; letter-spacing:.08em; font-weight:700; text-transform:uppercase; padding:.3rem .55rem; border-radius:6px; background:linear-gradient(135deg,#1e293b,#0f172a); color:var(--accent); border:1px solid #334155; box-shadow:0 2px 6px -2px #000; position:relative; top:-.25rem; margin-left:.25rem; }
+  body[data-theme="light"] .ai-badge { background:linear-gradient(135deg,#f1f5f9,#ffffff); color:#0ea5e9; border-color:#cbd5e1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="toolbar">
+      <div>
+        <h1>Cyber MITM Attack Lab Demo <span class="ai-badge" title="UI & demo content generated by AI; core lab code in repo">AI-GENERATED UI</span></h1>
+        <p>This page explains and simulates the behavior of the lab's packet interception and selective forwarding logic implemented in <code>sniffer1.py</code>.</p>
+        <p class="links"><strong>Repository:</strong> <a class="btn btn-accent" href="https://github.com/JosephPotapenko/Cyber-MITM-Attack-Lab" target="_blank" rel="noopener">GitHub – Cyber-MITM-Attack-Lab</a></p>
+        <p class="links"><strong>All‑in‑one:</strong> A single page that shows all code, README content, and lab PDFs in one place. <a class="btn" href="all-in-one.html">Open All‑in‑one</a></p>
+      </div>
+      <div class="right">
+        <button id="themeToggle" class="btn" aria-label="Toggle light/dark theme">Switch to light mode</button>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section>
+      <h2>What the Lab Does</h2>
+      <ul>
+        <li><strong>iptables setup</strong> (<code>lab2setup.sh</code>): Redirects all outbound TCP traffic to destination port 80 (HTTP) from non-root processes into local port <code>8080</code> using a <code>DNAT</code> rule, and drops <code>RST</code>/<code>RST,ACK</code> packets to keep flows alive while we inject/manipulate.</li>
+        <li><strong>Sniffing</strong> (<code>sniffer1.py</code>): Listens on port <code>8080</code>, extracts the raw HTTP request, prints host/path if recognized, censors any request body containing the keyword <code>frankenstein</code>, and for allowed traffic re-emits the packet to real destination port <code>80</code>.</li>
+        <li><strong>Teardown</strong> (<code>lab2teardown.sh</code>): Removes all rules so the system returns to its prior state.</li>
+      </ul>
+      <p>The result is a local MITM-like redirection of outbound HTTP requests before they leave the host, enabling inspection or modification.</p>
+    </section>
+    <section class="grid">
+      <div class="demo-panel">
+        <h2>Packet Flow Overview</h2>
+        <ol>
+          <li>User process (browser/curl) initiates <code>GET http://example.com/...</code> (dst port 80).</li>
+          <li><code>iptables</code> rule rewrites destination to local <code>:8080</code> (DNAT).</li>
+          <li>Sniffer receives packet, parses HTTP method line + <code>Host:</code> header.</li>
+          <li>If payload contains the censor token <code>frankenstein</code> → block &amp; log <span class="status-block">[CENSORED]</span>.</li>
+          <li>Else, craft a new packet: same IP src/dst, same TCP seq/ack/options, but destination port changed back to <code>80</code>; recompute checksums; send.</li>
+          <li>Log success <span class="status-ok">Your packet has been forwarded to port 80</span>.</li>
+        </ol>
+      </div>
+      <div class="demo-panel">
+        <h2>Example Console Output</h2>
+        <pre>[HTTP] example.com/books
+Your packet has been forwarded to port 80
+[HTTP] example.com/search?q=novel
+[CENSORED]
+[HTTP] unknown/
+No Payload Found</pre>
+      </div>
+    </section>
+    <section>
+      <h2>Interactive Simulation (Client-Side)</h2>
+      <p>This JavaScript demo mimics only the decision logic (it does <em>not</em> perform real network interception).</p>
+      <form id="simForm" onsubmit="simulate(event)">
+        <fieldset>
+          <legend>Send a Fake HTTP Request</legend>
+          <div class="row">
+            <div style="flex:1 1 160px;min-width:160px;">
+              <label for="host">Host</label>
+              <input required id="host" name="host" type="text" placeholder="example.com" />
+            </div>
+            <div style="flex:1 1 160px;min-width:160px;">
+              <label for="path">Path</label>
+              <input id="path" name="path" type="text" placeholder="/books" />
+            </div>
+          </div>
+          <div style="margin-top:.75rem;">
+            <label for="body">Payload Body (optional)</label>
+            <textarea id="body" name="body" rows="3" placeholder="Enter request body; include 'frankenstein' to trigger censor."></textarea>
+          </div>
+          <div style="margin-top:1rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+            <button type="submit">Send Request</button>
+            <span class="pill">Simulated</span>
+          </div>
+        </fieldset>
+      </form>
+      <div id="output" class="output-box">
+        <div class="output-line" style="color:var(--muted);">Output will appear here…</div>
+      </div>
+      <script>
+        const CENSOR = /frankenstein/i;
+        function simulate(e){
+          e.preventDefault();
+          const host = (document.getElementById('host').value || '').trim();
+          const path = (document.getElementById('path').value || '/').trim();
+          const body = (document.getElementById('body').value || '').trim();
+          const out = document.getElementById('output');
+          const lines = [];
+          if(host){ lines.push(`[HTTP] ${host}${path}`); }
+          if(body){
+            if(CENSOR.test(body)){
+              lines.push('[CENSORED]');
+            } else {
+              lines.push('Your packet has been forwarded to port 80');
+            }
+          } else {
+            lines.push('No Payload Found');
+          }
+          out.innerHTML = lines.map(l => `<div class="output-line">${l}</div>`).join('');
+        }
+      </script>
+    </section>
+    <section>
+      <h2>Key Code Concepts</h2>
+      <ul>
+        <li><code>sniff(filter="tcp and port 8080")</code> restricts capture to the redirected flow.</li>
+        <li><code>http_info()</code> manually parses method line and headers without a full HTTP parser.</li>
+        <li><code>CENSOR</code> constant scans raw payload bytes before forwarding.</li>
+        <li>Reconstruction keeps sequence/ack values to maintain TCP state &ndash; only destination port changes.</li>
+        <li><code>del new_pkt[IP].chksum</code> and <code>del new_pkt[TCP].chksum</code> force Scapy to recompute checksums.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Limitations / Next Steps</h2>
+      <ul>
+        <li>No handling of response packets (one-way demonstration).</li>
+        <li>No TLS interception; applies only to plaintext HTTP.</li>
+        <li>Keyword match is simplistic (raw substring, not tokenized).</li>
+        <li>Does not reassemble segmented TCP payloads (assumes request fits in one packet).</li>
+      </ul>
+      <p>Possible extensions: add TCP stream reassembly, log to file with timestamps, bidirectional proxying, richer content filtering rules, or upgrade to a transparent proxy.</p>
+    </section>
+    <section>
+      <h2>How to Run the Real Lab</h2>
+      <ol>
+        <li>Install dependencies (once): <code>pip3 install scapy</code></li>
+        <li>As root, apply iptables rules: <code>sudo ./lab2setup.sh</code></li>
+        <li>Run the sniffer: <code>sudo python3 sniffer1.py</code></li>
+        <li>In a separate terminal (non-root), make HTTP requests to trigger behavior:
+          <ul>
+            <li>Forwarded example (no body → may log <em>No Payload Found</em>):<br/>
+              <code>curl http://example.com/books</code></li>
+            <li>Forwarded example with body (allowed):<br/>
+              <code>curl -X POST -d "q=hello" http://example.com/search</code></li>
+            <li>Censored example (body contains <code>frankenstein</code>):<br/>
+              <code>curl -X POST -d "q=frankenstein" http://example.com/search</code></li>
+          </ul>
+        </li>
+        <li>Observe console output in the sniffer window.</li>
+        <li>Stop with <kbd>Ctrl+C</kbd>; optional cleanup: <code>sudo ./lab2teardown.sh</code>.</li>
+      </ol>
+      <p><strong>Notes:</strong> The DNAT rule targets non-root processes only; run your test <code>curl</code> commands without <code>sudo</code>. This lab inspects plaintext HTTP on port 80; HTTPS is not intercepted.</p>
+    </section>
+  </main>
+  <footer>
+    <span class="ai-note">This demo page was generated by AI; the original lab work and source files are in the repository.</span>
+    <span>MITM Lab Demonstration &copy; 2025.</span>
+    <a class="btn" href="https://github.com/JosephPotapenko/Cyber-MITM-Attack-Lab" target="_blank" rel="noopener">View on GitHub</a>
+  </footer>
+  <script>
+    (function(){
+      const key = 'theme';
+      const btn = document.getElementById('themeToggle');
+      const apply = (mode)=>{
+        if(mode === 'light'){
+          document.body.setAttribute('data-theme','light');
+          btn.textContent = 'Switch to dark mode';
+        } else {
+          document.body.removeAttribute('data-theme');
+          btn.textContent = 'Switch to light mode';
+        }
+      };
+      let saved = localStorage.getItem(key) || 'dark';
+      apply(saved);
+      btn.addEventListener('click', ()=>{
+        saved = (saved === 'dark') ? 'light' : 'dark';
+        localStorage.setItem(key, saved);
+        apply(saved);
+      });
+    })();
+  </script>
+</body>
+</html>
